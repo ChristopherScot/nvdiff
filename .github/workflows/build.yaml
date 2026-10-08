@@ -34,8 +34,8 @@ jobs:
         run: make build
 
   release:
-    # Only when VERSION changed, and only from main.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only when VERSION changed, and only from main. A manual run forces it.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -50,10 +50,18 @@ jobs:
       # gate stayed closed forever and no release could be cut, silently,
       # because a gate that does not open looks the same as a commit that
       # did not bump the version.
+      #
+      # A first commit has no HEAD~1, so the diff fails and reads as
+      # "unchanged"; it introduces VERSION, so count it. A manual run forces
+      # a release.
       - name: Release only on a VERSION change
         id: gate
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -qx 'VERSION'; then
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "go=true" >> $GITHUB_OUTPUT
+          elif ! git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+            echo "go=true" >> $GITHUB_OUTPUT
+          elif git diff --name-only HEAD~1 HEAD | grep -qx 'VERSION'; then
             echo "go=true" >> $GITHUB_OUTPUT
           else
             echo "go=false" >> $GITHUB_OUTPUT
