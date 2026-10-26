@@ -56,10 +56,11 @@ func updateCmd() *cobra.Command {
 }
 
 func runUpdate(checkOnly bool) error {
-	fmt.Printf("current version: %s\n", Version)
+	v := version()
+	fmt.Printf("current version: %s\n", v)
 
-	current := ensureV(Version)
-	if Version == "dev" {
+	current := ensureV(v)
+	if v == "dev" {
 		fmt.Println("running a dev build; not updating")
 		return nil
 	}
